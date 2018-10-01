@@ -10,6 +10,9 @@ pypinfo: View PyPI download statistics with ease.
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square
     :target: https://en.wikipedia.org/wiki/MIT_License
 
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square
+    :target: https://github.com/ambv/black
+
 -----
 
 pypinfo is a simple CLI to access `PyPI`_ download statistics via Google's BigQuery.
@@ -17,33 +20,41 @@ pypinfo is a simple CLI to access `PyPI`_ download statistics via Google's BigQu
 Installation
 ------------
 
+pypinfo is distributed on `PyPI`_ as a universal wheel and is available on
+Linux/macOS and Windows and supports Python 3.5+ and PyPy.
+
 This is relatively painless, I swear.
 
 1. Go to `<https://bigquery.cloud.google.com>`_.
 2. Sign up if you haven't already. The first TB of queried data each month
    is free. Each additional TB is $5.
 3. Go to `<https://console.developers.google.com/cloud-resource-manager>`_ and
-   create a new project. Any name is fine, but I recommend you choose something
-   to do with PyPI like pypinfo. This way you know what the project is designated
-   for.
-4. Follow `<https://cloud.google.com/storage/docs/authentication#generating-a-private-key>`_
+   create a new project if you don't already have one. Any name is fine, but I
+   recommend you choose something to do with PyPI like pypinfo. This way you
+   know what the project is designated for.
+4. Go to `<https://console.cloud.google.com/apis/api/bigquery-json.googleapis.com/overview>`_
+   and make sure the correct project is chosen using the drop-down on top. Click
+   the button on top to enable.
+5. Follow `<https://cloud.google.com/storage/docs/authentication#generating-a-private-key>`_
    to create credentials in JSON format. During creation, choose ``BigQuery User`` as role.
-   After creation, note the download location. Move the file wherever you want.
-5. ``pip install pypinfo``
-6. ``pypinfo --auth path/to/your_credentials.json``, or set an environment variable
+   (If ``BigQuery`` is not an option in the list, wait 15-20 minutes and try creating
+   the credentials again.) After creation, note the download location. Move the file
+   wherever you want.
+6. ``pip install pypinfo``
+7. ``pypinfo --auth path/to/your_credentials.json``, or set an environment variable
    ``GOOGLE_APPLICATION_CREDENTIALS`` that points to the file.
 
 Usage
 -----
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pypinfo
     Usage: pypinfo [OPTIONS] [PROJECT] [FIELDS]... COMMAND [ARGS]...
 
       Valid fields are:
 
-      project | version | pyversion | percent3 | percent2 | impl | impl-version |
+      project | version | file | pyversion | percent3 | percent2 | impl | impl-version |
 
       openssl | date | month | year | country | installer | installer-version |
 
@@ -52,14 +63,18 @@ Usage
     Options:
       -a, --auth TEXT         Path to Google credentials JSON file.
       --run / --test          --test simply prints the query.
-      -j, --json              Print data as JSON.
+      -j, --json              Print data as JSON, with keys `rows` and `query`.
+      -i, --indent INTEGER    JSON indentation level.
       -t, --timeout INTEGER   Milliseconds. Default: 120000 (2 minutes)
-      -l, --limit TEXT        Maximum number of query results. Default: 20
+      -l, --limit TEXT        Maximum number of query results. Default: 10
       -d, --days TEXT         Number of days in the past to include. Default: 30
       -sd, --start-date TEXT  Must be negative. Default: -31
       -ed, --end-date TEXT    Must be negative. Default: -1
       -w, --where TEXT        WHERE conditional. Default: file.project = "project"
       -o, --order TEXT        Field to order by. Default: download_count
+      -p, --pip               Only show installs by pip.
+      -pc, --percent          Print percentages.
+      -md, --markdown         Output as Markdown.
       --version               Show the version and exit.
       --help                  Show this message and exit.
 
@@ -72,138 +87,182 @@ Tip: If queries are resulting in NoneType errors, increase timeout.
 Downloads for a project
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pypinfo requests
-    download_count
-    --------------
-    11033343
+    Served from cache: False
+    Data processed: 6.87 GiB
+    Data billed: 6.87 GiB
+    Estimated cost: $0.04
+
+    | download_count |
+    | -------------- |
+    |      9,316,415 |
 
 All downloads
 ^^^^^^^^^^^^^
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pypinfo ""
-    download_count
-    --------------
-    662834133
+    Served from cache: False
+    Data processed: 0.00 B
+    Data billed: 0.00 B
+    Estimated cost: $0.00
+
+    | download_count |
+    | -------------- |
+    |    661,224,259 |
 
 Downloads for a project by Python version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pypinfo django pyversion
-    python_version download_count
-    -------------- --------------
-    2.7            788060
-    3.5            400008
-    3.6            169665
-    3.4            134378
-    None           59415
-    2.6            8276
-    3.3            4831
-    3.7            2680
-    3.2            1560
-    1.17           41
-    2.5            15
-    2.4            15
-    3.1            6
+    Served from cache: False
+    Data processed: 10.81 GiB
+    Data billed: 10.81 GiB
+    Estimated cost: $0.06
+
+    | python_version | download_count |
+    | -------------- | -------------- |
+    | 3.5            |        539,194 |
+    | 2.7            |        495,207 |
+    | 3.6            |        310,750 |
+    | None           |         84,524 |
+    | 3.4            |         64,621 |
+    | 3.7            |          3,022 |
+    | 2.6            |          2,966 |
+    | 3.3            |          1,638 |
+    | 1.17           |            285 |
+    | 3.2            |            188 |
+    | 3.1            |              4 |
+    | 2.5            |              3 |
 
 All downloads by country code
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pypinfo "" country
-    country download_count
-    ------- --------------
-    US      427837633
-    None    26184466
-    IE      25595967
-    CN      19682726
-    DE      17338740
-    GB      16848703
-    AU      12201849
-    CA      9828255
-    FR      9780133
-    BR      9276365
-    JP      9247794
-    RU      8758959
-    IL      7578813
-    IN      7468363
-    KR      6809831
-    NL      6120287
-    SG      5882292
-    TW      3961899
-    CZ      2352650
-    PL      2270622
+    Served from cache: False
+    Data processed: 2.40 GiB
+    Data billed: 2.40 GiB
+    Estimated cost: $0.02
+
+    | country | download_count |
+    | ------- | -------------- |
+    | US      |    420,722,571 |
+    | CN      |     27,235,750 |
+    | IE      |     24,011,857 |
+    | DE      |     19,112,463 |
+    | GB      |     18,485,428 |
+    | FR      |     17,394,541 |
+    | None    |     15,867,055 |
+    | JP      |     12,381,087 |
+    | CA      |     11,666,733 |
+    | KR      |     10,239,761 |
+    | AU      |      9,573,248 |
+    | SG      |      8,500,881 |
+    | IN      |      8,467,755 |
+    | RU      |      6,243,255 |
+    | NL      |      6,096,337 |
+    | BR      |      5,992,892 |
+    | IL      |      4,924,533 |
+    | PL      |      2,902,368 |
+    | HK      |      2,873,318 |
+    | SE      |      2,604,146 |
 
 Downloads for a project by system and distribution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pypinfo cryptography system distro
-    system_name distro_name                     download_count
-    ----------- ------------------------------- --------------
-    Linux       Ubuntu                          1226983
-    Linux       None                            701829
-    Linux       CentOS Linux                    254488
-    Linux       Debian GNU/Linux                207352
-    Linux       debian                          205485
-    Linux       CentOS                          195178
-    None        None                            179178
-    Windows     None                            126962
-    Darwin      macOS                           123389
-    Darwin      OS X                            51606
-    Linux       Amazon Linux AMI                43192
-    Linux       Red Hat Enterprise Linux Server 39157
-    Linux       Alpine Linux                    37721
-    Linux       Fedora                          25036
-    Linux       Virtuozzo                       10302
-    Linux       Raspbian GNU/Linux              4261
-    Linux       Linux                           4162
-    Linux       Oracle Linux Server             3754
-    FreeBSD     None                            3513
-    Linux       Debian                          3479
+    Served from cache: False
+    Data processed: 14.75 GiB
+    Data billed: 14.75 GiB
+    Estimated cost: $0.08
+
+    | system_name | distro_name                     | download_count |
+    | ----------- | ------------------------------- | -------------- |
+    | Linux       | Ubuntu                          |      1,314,938 |
+    | Linux       | Debian GNU/Linux                |        381,857 |
+    | Linux       | None                            |        359,993 |
+    | Linux       | CentOS Linux                    |        210,950 |
+    | Linux       | Amazon Linux AMI                |        198,807 |
+    | None        | None                            |        179,950 |
+    | Windows     | None                            |        176,495 |
+    | Darwin      | macOS                           |         75,030 |
+    | Linux       | Alpine Linux                    |         66,296 |
+    | Linux       | CentOS                          |         62,812 |
+    | Linux       | Red Hat Enterprise Linux Server |         47,030 |
+    | Linux       | debian                          |         33,601 |
+    | Linux       | Raspbian GNU/Linux              |         29,467 |
+    | Linux       | Fedora                          |         20,112 |
+    | Linux       | openSUSE Leap                   |         11,549 |
+    | Darwin      | OS X                            |          6,970 |
+    | Linux       | Linux                           |          6,894 |
+    | Linux       | Virtuozzo                       |          6,611 |
+    | FreeBSD     | None                            |          5,898 |
+    | Linux       | RedHatEnterpriseServer          |          4,415 |
 
 Most popular projects in the past year
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pypinfo --days 365 "" project
-    project         download_count
-    --------------- --------------
-    simplejson      315759419
-    six             197395098
-    setuptools      132878072
-    python-dateutil 126256414
-    pip             118786872
-    botocore        115173253
-    pyasn1          111974599
-    requests        108922890
-    selenium        104830580
-    docutils        104397734
-    jmespath        95403328
-    awscli          94119214
-    rsa             91575245
-    colorama        85788062
-    awscli-cwlogs   57035580
-    futures         52305306
-    cffi            51895901
-    pyyaml          51475454
-    pbr             50267849
-    pyparsing       50155835
+    Served from cache: False
+    Data processed: 87.84 GiB
+    Data billed: 87.84 GiB
+    Estimated cost: $0.43
+
+    | project         | download_count |
+    | --------------- | -------------- |
+    | simplejson      |    267,459,163 |
+    | six             |    213,697,561 |
+    | setuptools      |    164,144,954 |
+    | botocore        |    162,843,025 |
+    | python-dateutil |    159,786,908 |
+    | pip             |    155,164,096 |
+    | pyasn1          |    142,647,378 |
+    | requests        |    141,811,313 |
+    | docutils        |    136,073,108 |
+    | pyyaml          |    127,183,654 |
+    | jmespath        |    126,997,657 |
+    | s3transfer      |    123,275,444 |
+    | futures         |    121,993,875 |
+    | awscli          |    119,512,669 |
+    | rsa             |    112,884,251 |
+    | colorama        |    107,995,099 |
+    | idna            |     79,363,400 |
+    | wheel           |     79,098,241 |
+    | selenium        |     72,291,821 |
+    | awscli-cwlogs   |     69,708,863 |
+
+Downloads between two YYYY-MM-DD dates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: console
+
+    $ pypinfo --start-date 2018-04-01 --end-date 2018-04-30 setuptools
+    Served from cache: True
+    Data processed: 0.00 B
+    Data billed: 0.00 B
+    Estimated cost: $0.00
+
+    | download_count |
+    | -------------- |
+    |      9,572,911 |
 
 Percentage of Python 3 downloads of the top 100 projects in the past year
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let's use ``--test`` to only see the query instead of sending it.
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pypinfo --test --days 365 --limit 100 "" project percent3
     SELECT
@@ -236,6 +295,82 @@ Changelog
 ---------
 
 Important changes are emphasized.
+
+15.0.0
+^^^^^^
+
+- Allow yyyy-mm-dd dates
+- Add --all option, default to only showing downloads via pip
+- Add download total row
+
+14.0.0
+^^^^^^
+
+- Added new ``file`` field!
+
+13.0.0
+^^^^^^
+
+- Added ``last_update`` JSON key, which is a UTC timestamp.
+
+12.0.0
+^^^^^^
+
+- **Breaking:** JSON output is now a mapping with keys ``rows``, which is all the
+  data that was previously outputted, and ``query``, which is relevant metadata.
+- Increased the resolution of percentages.
+
+11.0.0
+^^^^^^
+
+- Fixed JSON output.
+
+10.0.0
+^^^^^^
+
+- Fixed custom field ordering.
+
+9.0.0
+^^^^^
+
+- Added new BigQuery usage stats.
+- Lowered the default number of results to ``10`` from ``20``.
+- Updated examples.
+- Fixed table formatting regression.
+
+8.0.0
+^^^^^
+
+- Updated ``google-cloud-bigquery`` dependency.
+
+7.0.0
+^^^^^
+
+- Output table is now in Markdown format for easy copying to GitHub issues and PRs.
+
+6.0.0
+^^^^^
+
+- Updated ``google-cloud-bigquery`` dependency.
+
+5.0.0
+^^^^^
+
+- Numeric output (non-json) is now prettier (thanks `hugovk <https://github.com/hugovk>`_)
+- You can now filter results for only pip installs with the ``--pip`` flag
+  (thanks `hugovk <https://github.com/hugovk>`_)
+
+4.0.0
+^^^^^
+
+- ``--order`` now works with all fields (thanks `Brian Skinn <https://github.com/bskinn>`_)
+- Updated installation docs (thanks `Brian Skinn <https://github.com/bskinn>`_)
+
+3.0.1
+^^^^^
+
+- Fix: project names are now normalized to adhere to
+  `PEP 503 <https://www.python.org/dev/peps/pep-0503>`_.
 
 3.0.0
 ^^^^^
