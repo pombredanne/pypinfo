@@ -11,7 +11,7 @@ pypinfo: View PyPI download statistics with ease.
     :target: https://en.wikipedia.org/wiki/MIT_License
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square
-    :target: https://github.com/ambv/black
+    :target: https://github.com/psf/black
 
 -----
 
@@ -25,24 +25,58 @@ Linux/macOS and Windows and supports Python 3.5+ and PyPy.
 
 This is relatively painless, I swear.
 
+**Create project**
+
 1. Go to `<https://bigquery.cloud.google.com>`_.
 2. Sign up if you haven't already. The first TB of queried data each month
    is free. Each additional TB is $5.
-3. Go to `<https://console.developers.google.com/cloud-resource-manager>`_ and
-   create a new project if you don't already have one. Any name is fine, but I
-   recommend you choose something to do with PyPI like pypinfo. This way you
-   know what the project is designated for.
-4. Go to `<https://console.cloud.google.com/apis/api/bigquery-json.googleapis.com/overview>`_
+
+3. Go to `<https://console.developers.google.com/cloud-resource-manager>`_ and click
+   CREATE PROJECT if you don't already have one:
+
+   .. image:: https://user-images.githubusercontent.com/1324225/47172949-6f4ea880-d315-11e8-8587-8b8117efeae9.png
+
+4. This takes you to `<https://console.developers.google.com/projectcreate>`_. Fill out
+   the form and click CREATE. Any name is fine, but I recommend you choose something to
+   do with PyPI like pypinfo. This way you know what the project is designated for:
+
+   .. image:: https://user-images.githubusercontent.com/1324225/47173020-986f3900-d315-11e8-90ab-4b2ecd85b88e.png
+
+5. The next page should show your new project. If not, reload the page and select from
+   the top menu:
+
+   .. image:: https://user-images.githubusercontent.com/1324225/47173170-0b78af80-d316-11e8-879e-01f34e139b80.png
+
+**Enable BigQuery API**
+
+6. Go to `<https://console.cloud.google.com/apis/api/bigquery-json.googleapis.com/overview>`_
    and make sure the correct project is chosen using the drop-down on top. Click
-   the button on top to enable.
-5. Follow `<https://cloud.google.com/storage/docs/authentication#generating-a-private-key>`_
-   to create credentials in JSON format. During creation, choose ``BigQuery User`` as role.
-   (If ``BigQuery`` is not an option in the list, wait 15-20 minutes and try creating
-   the credentials again.) After creation, note the download location. Move the file
-   wherever you want.
-6. ``pip install pypinfo``
-7. ``pypinfo --auth path/to/your_credentials.json``, or set an environment variable
-   ``GOOGLE_APPLICATION_CREDENTIALS`` that points to the file.
+   the ENABLE button:
+
+   .. image:: https://user-images.githubusercontent.com/1324225/47173408-a6718980-d316-11e8-94c2-a17ff54fc389.png
+
+7. After enabling, click CREATE CREDENTIALS:
+
+   .. image:: https://user-images.githubusercontent.com/1324225/47173432-bc7f4a00-d316-11e8-8152-6a0e6cfab70f.png
+
+8. Choose the "BigQuery API" and "No, I'm not using them":
+
+   .. image:: https://user-images.githubusercontent.com/1324225/47173510-ec2e5200-d316-11e8-8508-2bfbb8f6b02f.png
+
+9. Fill in a name, and select role "BigQuery User" (if the "BigQuery" is not an option
+   in the list, wait 15-20 minutes and try creating the credentials again), and select a
+   JSON key:
+
+   .. image:: https://user-images.githubusercontent.com/1324225/47173576-18e26980-d317-11e8-8bfe-e4775d965e32.png
+
+10. Click continue and the JSON will download to your computer. Note the download
+    location. Move the file wherever you want:
+
+   .. image:: https://user-images.githubusercontent.com/1324225/47173614-331c4780-d317-11e8-9ed2-fc76557a2bf6.png
+
+11. ``pip install pypinfo``
+12. ``pypinfo --auth path/to/your_credentials.json``, or set an environment variable
+    ``GOOGLE_APPLICATION_CREDENTIALS`` that points to the file.
 
 Usage
 -----
@@ -68,13 +102,15 @@ Usage
       -t, --timeout INTEGER   Milliseconds. Default: 120000 (2 minutes)
       -l, --limit TEXT        Maximum number of query results. Default: 10
       -d, --days TEXT         Number of days in the past to include. Default: 30
-      -sd, --start-date TEXT  Must be negative. Default: -31
-      -ed, --end-date TEXT    Must be negative. Default: -1
+      -sd, --start-date TEXT  Must be negative or YYYY-MM[-DD]. Default: -31
+      -ed, --end-date TEXT    Must be negative or YYYY-MM[-DD]. Default: -1
+      -m, --month TEXT        Shortcut for -sd & -ed for a single YYYY-MM month.
       -w, --where TEXT        WHERE conditional. Default: file.project = "project"
       -o, --order TEXT        Field to order by. Default: download_count
-      -p, --pip               Only show installs by pip.
+      --all                   Show downloads by all installers, not only pip.
       -pc, --percent          Print percentages.
       -md, --markdown         Output as Markdown.
+      -v, --verbose           Print debug messages to stderr.
       --version               Show the version and exit.
       --help                  Show this message and exit.
 
@@ -257,6 +293,39 @@ Downloads between two YYYY-MM-DD dates
     | -------------- |
     |      9,572,911 |
 
+Downloads between two YYYY-MM dates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- A yyyy-mm ``--start-date`` defaults to the first day of the month
+- A yyyy-mm ``--end-date`` defaults to the last day of the month
+
+.. code-block:: console
+
+    $ pypinfo --start-date 2018-04 --end-date 2018-04 setuptools
+    Served from cache: True
+    Data processed: 0.00 B
+    Data billed: 0.00 B
+    Estimated cost: $0.00
+
+    | download_count |
+    | -------------- |
+    |      9,572,911 |
+
+Downloads for a single YYYY-MM month
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: console
+
+    $ pypinfo --month 2018-04 setuptools
+    Served from cache: True
+    Data processed: 0.00 B
+    Data billed: 0.00 B
+    Estimated cost: $0.00
+
+    | download_count |
+    | -------------- |
+    |      9,572,911 |
+
 Percentage of Python 3 downloads of the top 100 projects in the past year
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -296,11 +365,31 @@ Changelog
 
 Important changes are emphasized.
 
+Unreleased
+^^^^^^^^^^
+
+16.0.0
+^^^^^^
+
+- Allow yyyy-mm[-dd] ``--start-date`` and ``--end-date``:
+
+  - A yyyy-mm ``--start-date`` defaults to the first day of the month
+  - A yyyy-mm ``--end-date`` defaults to the last day of the month
+
+- Add ``--month`` as a shortcut to ``--start-date`` and ``--end-date``
+  for a single yyyy-mm month
+
+- Add ``--verbose`` option to print credentials location
+
+- Update installation instructions
+
+- Enforce ``black`` code style
+
 15.0.0
 ^^^^^^
 
 - Allow yyyy-mm-dd dates
-- Add --all option, default to only showing downloads via pip
+- Add ``--all`` option, default to only showing downloads via pip
 - Add download total row
 
 14.0.0
